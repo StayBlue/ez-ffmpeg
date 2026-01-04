@@ -204,6 +204,8 @@ pub struct Output {
     pub(crate) audio_sample_rate: Option<i32>,
     pub(crate) audio_channels: Option<i32>,
     pub(crate) audio_sample_fmt: Option<AVSampleFormat>,
+    /// Use chromaprint-compatible resampler settings for audio outputs.
+    pub(crate) audio_resample_compat: bool,
 
     // -q:v
     // use fixed quality scale (VBR)
@@ -895,6 +897,12 @@ impl Output {
         self
     }
 
+    /// Enables chromaprint-compatible resampler settings for audio outputs.
+    pub fn set_audio_resample_compat(mut self, enabled: bool) -> Self {
+        self.audio_resample_compat = enabled;
+        self
+    }
+
     /// Sets the **video quality scale** (VBR) for encoding.
     ///
     /// This method configures a fixed quality scale for variable bitrate (VBR) video encoding.
@@ -1571,6 +1579,7 @@ impl From<Box<dyn FnMut(&[u8]) -> i32>> for Output {
             audio_sample_rate: None,
             audio_channels: None,
             audio_sample_fmt: None,
+            audio_resample_compat: false,
             video_qscale: None,
             audio_qscale: None,
             max_video_frames: None,
@@ -1613,6 +1622,7 @@ impl From<String> for Output {
             audio_sample_rate: None,
             audio_channels: None,
             audio_sample_fmt: None,
+            audio_resample_compat: false,
             video_qscale: None,
             audio_qscale: None,
             max_video_frames: None,

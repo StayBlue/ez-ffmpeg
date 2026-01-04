@@ -1028,17 +1028,52 @@ unsafe fn configure_output_audio_filter(
     };
     av_bprint_init(&mut bprint, 0, u32::MAX);
 
-    choose_sample_fmts(
-        &mut bprint,
-        ofp.opts.audio_format,
-        ofp.opts.audio_formats.clone(),
-    );
-    choose_sample_rates(
-        &mut bprint,
-        ofp.opts.sample_rate,
-        ofp.opts.sample_rates.clone(),
-    );
-    choose_channel_layouts(&mut bprint, ofp.opts.ch_layout, ofp.opts.ch_layouts.clone());
+    if ofp.opts.audio_resample_compat {
+        // Match chromaprint's swresample settings for fpcalc parity.
+        if ofp.opts.sample_rate > 0 {
+            let osr_str = CString::new("osr=").unwrap();
+            av_bprintf(&mut bprint, osr_str.as_ptr());
+            let fmt_specifier = CString::new("%d").unwrap();
+            av_bprintf(&mut bprint, fmt_specifier.as_ptr(), ofp.opts.sample_rate);
+            av_bprint_chars(&mut bprint, b":"[0] as i8, 1);
+        }
+
+        if ofp.opts.audio_format != AV_SAMPLE_FMT_NONE {
+            let format_name = av_get_sample_fmt_name(ofp.opts.audio_format);
+            if !format_name.is_null() {
+                let osf_str = CString::new("osf=").unwrap();
+                av_bprintf(&mut bprint, osf_str.as_ptr());
+                let fmt_str = CString::new("%s").unwrap();
+                av_bprintf(&mut bprint, fmt_str.as_ptr(), format_name);
+                av_bprint_chars(&mut bprint, b":"[0] as i8, 1);
+            }
+        }
+
+        if av_channel_layout_check(&ofp.opts.ch_layout) != 0 {
+            let ochl_str = CString::new("ochl=").unwrap();
+            av_bprintf(&mut bprint, ochl_str.as_ptr());
+            av_channel_layout_describe_bprint(&ofp.opts.ch_layout, &mut bprint);
+            av_bprint_chars(&mut bprint, b":"[0] as i8, 1);
+        }
+
+        let resampler_opts = CString::new(
+            "resampler=swr:filter_size=16:phase_shift=8:linear_interp=1:cutoff=0.8",
+        )
+        .unwrap();
+        av_bprintf(&mut bprint, resampler_opts.as_ptr());
+    } else {
+        choose_sample_fmts(
+            &mut bprint,
+            ofp.opts.audio_format,
+            ofp.opts.audio_formats.clone(),
+        );
+        choose_sample_rates(
+            &mut bprint,
+            ofp.opts.sample_rate,
+            ofp.opts.sample_rates.clone(),
+        );
+        choose_channel_layouts(&mut bprint, ofp.opts.ch_layout, ofp.opts.ch_layouts.clone());
+    }
 
     if bprint.len >= bprint.size {
         av_bprint_finalize(&mut bprint, null_mut());
@@ -1048,15 +1083,25 @@ unsafe fn configure_output_audio_filter(
     if bprint.len > 0 {
         let mut filter = null_mut();
 
-        let result = CString::new(format!("format_out_{}", ofp.name));
+        let filter_label = if ofp.opts.audio_resample_compat {
+            format!("aresample_out_{}", ofp.name)
+        } else {
+            format!("format_out_{}", ofp.name)
+        };
+        let result = CString::new(filter_label);
         if let Err(_) = result {
             av_bprint_finalize(&mut bprint, null_mut());
             return AVERROR(ENOMEM);
         }
         let name = result.unwrap();
 
-        let format_out_str = CString::new("aformat").unwrap();
-        let format_out_filter = avfilter_get_by_name(format_out_str.as_ptr());
+        let filter_name = if ofp.opts.audio_resample_compat {
+            "aresample"
+        } else {
+            "aformat"
+        };
+        let filter_name = CString::new(filter_name).unwrap();
+        let format_out_filter = avfilter_get_by_name(filter_name.as_ptr());
         let mut ret = avfilter_graph_create_filter(
             &mut filter,
             format_out_filter,

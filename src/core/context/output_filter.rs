@@ -58,6 +58,7 @@ pub(crate) struct OutputFilterOptions {
     pub(crate) formats: Option<Vec<AVPixelFormat>>,
     pub(crate) audio_format: AVSampleFormat,
     pub(crate) audio_formats: Option<Vec<AVSampleFormat>>,
+    pub(crate) audio_resample_compat: bool,
     pub(crate) framerate: AVRational,
     pub(crate) framerates: Option<Vec<AVRational>>,
     #[allow(dead_code)]
@@ -90,6 +91,7 @@ impl OutputFilterOptions {
             formats: None,
             audio_format: AVSampleFormat::AV_SAMPLE_FMT_NONE,
             audio_formats: None,
+            audio_resample_compat: false,
             framerate: AVRational { num: 0, den: 0 },
             framerates: None,
             color_space: AVColorSpace::AVCOL_SPC_UNSPECIFIED,

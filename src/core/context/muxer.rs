@@ -95,6 +95,7 @@ pub(crate) struct Muxer {
     pub(crate) audio_sample_rate: Option<i32>,
     pub(crate) audio_channels: Option<i32>,
     pub(crate) audio_sample_fmt: Option<AVSampleFormat>,
+    pub(crate) audio_resample_compat: bool,
 
     pub(crate) video_qscale: Option<i32>,
     pub(crate) audio_qscale: Option<i32>,
@@ -152,6 +153,7 @@ impl Muxer {
         audio_sample_rate: Option<i32>,
         audio_channels: Option<i32>,
         audio_sample_fmt: Option<AVSampleFormat>,
+        audio_resample_compat: bool,
         video_qscale: Option<i32>,
         audio_qscale: Option<i32>,
         max_video_frames: Option<i64>,
@@ -187,6 +189,7 @@ impl Muxer {
             audio_sample_rate,
             audio_channels,
             audio_sample_fmt,
+            audio_resample_compat,
             video_qscale,
             audio_qscale,
             max_video_frames,

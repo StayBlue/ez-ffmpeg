@@ -1042,6 +1042,7 @@ fn configure_output_filter_opts(
             if let Some(sample_fmt) = &mux.audio_sample_fmt {
                 output_filter.opts.audio_format = *sample_fmt;
             }
+            output_filter.opts.audio_resample_compat = mux.audio_resample_compat;
             // audio formats
             let mut audio_formats: *const AVSampleFormat = null();
             let mut ret = avcodec_get_supported_config(
@@ -1953,6 +1954,7 @@ unsafe fn open_output_file(index: usize, output: &mut Output, copy_ts: bool) -> 
         output.audio_sample_rate,
         output.audio_channels,
         output.audio_sample_fmt,
+        output.audio_resample_compat,
         output.video_qscale,
         output.audio_qscale,
         output.max_video_frames,
